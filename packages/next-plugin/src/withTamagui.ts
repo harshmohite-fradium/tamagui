@@ -3,20 +3,15 @@ import path from 'path'
 import browserslist from 'browserslist'
 import { lazyPostCSS } from 'next/dist/build/webpack/config/blocks/css'
 import { getGlobalCssLoader } from 'next/dist/build/webpack/config/blocks/css/loaders'
-import { PluginOptions as LoaderPluginOptions, TamaguiPlugin } from 'tamagui-loader'
+import type { PluginOptions as LoaderPluginOptions } from 'tamagui-loader'
+import { TamaguiPlugin } from 'tamagui-loader'
 import webpack from 'webpack'
+import { loadTamaguiBuildConfigSync } from '@tamagui/static'
 
 export type WithTamaguiProps = LoaderPluginOptions & {
   appDir?: boolean
-
-  /**
-   * @deprecated Deprecated
-   */
-  useReactNativeWebLite: boolean
   enableLegacyFontSupport?: boolean
-  aliasReactPackages?: boolean
   includeCSSTest?: RegExp | ((path: string) => boolean)
-  doesMutateThemes?: boolean
   shouldExtract?: (path: string, projectRoot: string) => boolean | undefined
   shouldExcludeFromServer?: (props: {
     context: string
@@ -25,12 +20,20 @@ export type WithTamaguiProps = LoaderPluginOptions & {
   }) => boolean | string | undefined
 }
 
-export const withTamagui = (tamaguiOptions: WithTamaguiProps) => {
+export const withTamagui = (tamaguiOptionsIn?: WithTamaguiProps) => {
   return (nextConfig: any = {}) => {
+    const tamaguiOptions = {
+      ...tamaguiOptionsIn,
+      ...loadTamaguiBuildConfigSync(tamaguiOptionsIn),
+    }
     const isAppDir = tamaguiOptions?.appDir || nextConfig.experimental?.appDir
 
     return {
       ...nextConfig,
+      transpilePackages: [
+        ...(nextConfig.transpilePackages || []),
+        'expo-linear-gradient',
+      ],
       webpack: (webpackConfig: any, options: any) => {
         const { dir, config, dev, isServer } = options
 
@@ -54,9 +57,7 @@ export const withTamagui = (tamaguiOptions: WithTamaguiProps) => {
           })
         }
 
-        const enableStudio = options.dev && options.nextRuntime === 'nodejs' && isServer
         const tamaguiPlugin = new TamaguiPlugin({
-          enableStudio,
           isServer,
           ...tamaguiOptions,
         })
@@ -66,10 +67,9 @@ export const withTamagui = (tamaguiOptions: WithTamaguiProps) => {
           'process.env.TAMAGUI_TARGET': '"web"',
           'process.env.TAMAGUI_IS_SERVER': JSON.stringify(isServer ? 'true' : ''),
           __DEV__: JSON.stringify(dev),
-          ...((tamaguiOptions.outputCSS || process.env.TAMAGUI_DOES_SSR_CSS) && {
+          ...(process.env.TAMAGUI_DOES_SSR_CSS && {
             'process.env.TAMAGUI_DOES_SSR_CSS': JSON.stringify(
-              process.env.TAMAGUI_DOES_SSR_CSS ??
-                (tamaguiOptions?.doesMutateThemes === false ? true : 'mutates-themes')
+              process.env.TAMAGUI_DOES_SSR_CSS
             ),
           }),
 
@@ -185,8 +185,8 @@ export const withTamagui = (tamaguiOptions: WithTamaguiProps) => {
                 return !res
                   ? Promise.resolve(undefined)
                   : typeof res === 'string'
-                  ? Promise.resolve(res)
-                  : external(ctx)
+                    ? Promise.resolve(res)
+                    : external(ctx)
               }
             }),
           ]

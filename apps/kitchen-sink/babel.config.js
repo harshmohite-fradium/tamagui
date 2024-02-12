@@ -1,4 +1,4 @@
-module.exports = function (api) {
+module.exports = (api) => {
   api.cache(true)
   return {
     presets: [['babel-preset-expo', { jsxRuntime: 'automatic' }]],
@@ -9,11 +9,11 @@ module.exports = function (api) {
           platform: 'native',
           components: ['tamagui', '@tamagui/sandbox-ui'],
           config: './src/tamagui.config.ts',
+          experimentalFlattenThemesOnNative: true,
           // disable: true,
           // disableExtraction: true,
         },
       ],
-      'transform-inline-environment-variables',
       'react-native-reanimated/plugin',
     ],
   }

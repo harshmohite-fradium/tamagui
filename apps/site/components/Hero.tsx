@@ -9,6 +9,7 @@ import {
   SizableText,
   Spacer,
   Text,
+  Theme,
   TooltipSimple,
   VisuallyHidden,
   XStack,
@@ -22,6 +23,8 @@ import { useHeroHovered } from './heroState'
 import { InstallInput } from './InstallInput'
 import { seasons } from './SeasonToggleButton'
 import { TwitterIcon } from './TwitterIcon'
+import { Figma } from '@tamagui/lucide-icons'
+import { FigmaButton } from './FigmaButton'
 
 export function Hero() {
   const { name } = useTint()
@@ -29,16 +32,6 @@ export function Hero() {
   return (
     <ThemeTint>
       <div className={`${name}-season _dsp-contents`}>
-        <YStack
-          o={0.75}
-          zi={-1}
-          pos="absolute"
-          t={0}
-          l={0}
-          r={0}
-          h={2000}
-          className="hero-blur"
-        />
         <HeroContents />
       </div>
     </ThemeTint>
@@ -50,19 +43,19 @@ const HeroSubTitle = memo(() => {
   return (
     <Subtitle>
       <NextLink prefetch={false} href="/docs/core/configuration">
-        <Tag theme="green_alt2" onHoverIn={() => setHovered(0)} active={hovered === 0}>
+        <Tag theme="green" onHoverIn={() => setHovered(0)} active={hovered === 0}>
           styles
         </Tag>
       </NextLink>{' '}
       +{' '}
       <NextLink prefetch={false} href="/docs/intro/why-a-compiler">
-        <Tag theme="blue_alt2" onHoverIn={() => setHovered(1)} active={hovered === 1}>
+        <Tag theme="blue" onHoverIn={() => setHovered(1)} active={hovered === 1}>
           optimizing compiler
         </Tag>
       </NextLink>{' '}
       +{' '}
       <NextLink prefetch={false} href="/docs/components/stacks">
-        <Tag theme="purple_alt2" onHoverIn={() => setHovered(2)} active={hovered === 2}>
+        <Tag theme="purple" onHoverIn={() => setHovered(2)} active={hovered === 2}>
           UI&nbsp;kit
         </Tag>
       </NextLink>{' '}
@@ -72,7 +65,7 @@ const HeroSubTitle = memo(() => {
 })
 
 const HeroContents = memo(function HeroContents() {
-  const { name } = useTint()
+  const { name, tint, tintAlt } = useTint()
 
   return (
     <ContainerLarge contain="layout" pos="relative">
@@ -101,22 +94,22 @@ const HeroContents = memo(function HeroContents() {
         }}
       >
         <>
-          <XStack pos="absolute" als="center" y={-80}>
+          <XStack pos="absolute" als="center" y={-80} gap="$4">
             <Link prefetch={false} href="/takeout">
               <Button
-                bw={2}
-                boc="$color5"
+                bc="$color6"
                 size="$3"
                 br="$10"
                 elevation="$1"
                 fontFamily="$silkscreen"
               >
-                Introducing Takeout 🥡
-                <Text ff="$body" fontSize="$3" color="$color10" $sm={{ dsp: 'none' }}>
-                  pro starter kit
+                Takeout 🥡
+                <Text ff="$body" fontSize="$4" color="$color10" $sm={{ dsp: 'none' }}>
+                  starter kit++
                 </Text>
               </Button>
             </Link>
+            <FigmaButton />
           </XStack>
         </>
 
@@ -147,11 +140,22 @@ const HeroContents = memo(function HeroContents() {
               h: 310,
             }}
           >
-            <Text>Write less</Text>
+            <Text
+              className="clip-text"
+              style={{
+                backgroundImage: `-webkit-linear-gradient(
+                  -90deg,
+                  var(--${tintAlt}9),
+                  var(--${tint}9) 70%
+                )`,
+              }}
+            >
+              Write less
+            </Text>
             {/* add gradient to other colors: */}
             <br />
             <span style={{ position: 'relative' }}>
-              <span>runs&nbsp;faster</span>
+              <span style={{ opacity: 0 }}>runs&nbsp;faster</span>
               <RunsFasterTextEffects />
             </span>
           </H1>
@@ -247,14 +251,14 @@ const HeroContents = memo(function HeroContents() {
                 pressStyle={{
                   elevation: '$0',
                 }}
-              // TODO this is applying in dark mode...
-              // $theme-light={{
-              //   bc: '$color1',
-              //   hoverStyle: {
-              //     bc: '$color2',
-              //     color: '$color10',
-              //   },
-              // }}
+                // TODO this is applying in dark mode...
+                // $theme-light={{
+                //   bg: '$color1',
+                //   hoverStyle: {
+                //     bg: '$color2',
+                //     color: '$color10',
+                //   },
+                // }}
               >
                 Get started
               </Button>
@@ -332,23 +336,23 @@ const Tag = styled(Text, {
   px: '$1',
   mx: '$-1',
   cursor: 'pointer',
-  color: '$color',
-  bc: '$color2',
+  color: '$color10',
+  bg: '$color3',
 
   hoverStyle: {
     color: '$color',
-    bc: '$color3',
+    bg: '$color4',
   },
 
   variants: {
     active: {
       true: {
         color: '$color10',
-        bc: '$color5',
+        bg: '$color5',
 
         hoverStyle: {
           color: '$color12',
-          bc: '$color5',
+          bg: '$color5',
         },
       },
     },
@@ -360,7 +364,7 @@ const HeroText = styled(Text, {
 
   $sm: {
     t: 0,
-    l: -2,
+    l: -4,
   },
 
   $gtSm: {
@@ -378,27 +382,54 @@ const HeroText = styled(Text, {
 
 const RunsFasterTextEffects = () => {
   return (
-    <YStack fullscreen $sm={{ x: 1 }}>
-      <HeroText className="clip-text rainbow" l={-3}>
+    <YStack fullscreen $sm={{ x: -2.5 }}>
+      <HeroText className="clip-text rainbow" l={-4} $sm={{ l: 0 }}>
         runs&nbsp;faster
       </HeroText>
       <ThemeTintAlt offset={2}>
-        <HeroText className="mask-gradient-left" pe="none" l={-2} o={0.5} col="$color8">
+        <HeroText
+          className="mask-gradient-down"
+          style={{ mixBlendMode: 'hard-light' }}
+          pe="none"
+          o={0.5}
+          col="$color8"
+          $sm={{ l: 3 }}
+        >
           runs&nbsp;faster
         </HeroText>
       </ThemeTintAlt>
       <ThemeTintAlt offset={1}>
-        <HeroText l={-3} className="mask-gradient-left" pe="none" col="$color8">
+        <HeroText
+          l={-3}
+          className="mask-gradient-up"
+          pe="none"
+          col="$color8"
+          $sm={{ l: 1.5 }}
+        >
           runs&nbsp;faster
         </HeroText>
       </ThemeTintAlt>
       <ThemeTintAlt offset={-2}>
-        <HeroText l={3} className="mask-gradient-right" pe="none" col="$color8" o={0.1}>
+        <HeroText
+          l={0}
+          className="mask-gradient-right"
+          pe="none"
+          col="$color8"
+          o={0.26}
+          $sm={{ l: 3 }}
+        >
           runs&nbsp;faster
         </HeroText>
       </ThemeTintAlt>
       <ThemeTintAlt offset={-3}>
-        <HeroText l={-3} className="mask-gradient-right" pe="none" col="$color8" o={0.5}>
+        <HeroText
+          l={0}
+          className="mask-gradient-right"
+          pe="none"
+          col="$color8"
+          o={0.5}
+          $sm={{ l: 3 }}
+        >
           runs&nbsp;faster
         </HeroText>
       </ThemeTintAlt>

@@ -11,7 +11,10 @@ export * from './insertFont'
 export * from './styled'
 export * from './setupReactNative'
 
-export * from './types'
+export type { TamaguiBuildOptions } from '@tamagui/types'
+export type * from './types'
+export type * from './interfaces/RNExclusiveTypes'
+
 export * from './interfaces/GetRef'
 
 export {
@@ -28,11 +31,10 @@ export * from './constants/constants'
 
 export * from './contexts/ComponentContext'
 
+export * from './helpers/createMediaStyle'
+export * from './helpers/createShallowSetState'
 export * from './helpers/createStyledContext'
 export * from './helpers/expandStyles'
-export * from './helpers/createMediaStyle'
-export * from './helpers/expandStylesAndRemoveNullishValues'
-export * from './helpers/propMapper'
 export * from './helpers/getExpandedShorthands'
 export * from './helpers/getSplitStyles'
 export * from './helpers/getStylesAtomic'
@@ -43,17 +45,20 @@ export * from './helpers/isTamaguiElement'
 export * from './helpers/matchMedia'
 export * from './helpers/mergeProps'
 export * from './helpers/normalizeColor'
-export * from './helpers/proxyThemeVariables'
+export * from './helpers/normalizeStyle'
+export * from './helpers/propMapper'
 export * from './helpers/proxyThemeToParents'
+export * from './helpers/proxyThemeVariables'
 export * from './helpers/pseudoDescriptors'
 export * from './helpers/themeable'
 export * from './helpers/themes'
-export * from './helpers/createShallowSetState'
+export * from './helpers/transformsToString'
 export * from './internalWithTheme'
 
 export {
   configureMedia,
   mediaState,
+  mediaKeyMatch,
   useMedia,
   getMedia,
   mediaObjectToString,

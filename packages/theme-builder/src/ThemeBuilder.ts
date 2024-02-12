@@ -1,9 +1,11 @@
-import {
+import type {
   MaskDefinitions,
   PaletteDefinitions,
   TemplateDefinitions,
   ThemeDefinitions,
   ThemeUsingMask,
+} from '@tamagui/create-theme'
+import {
   applyMask,
   createMask,
   createThemeWithPalettes,
@@ -31,12 +33,12 @@ type GetParentTheme<P, Themes extends ThemeDefinitions | undefined> = P extends 
   ? P extends keyof Themes
     ? Themes[P]
     : GetParentName<P> extends keyof Themes
-    ? Themes[GetParentName<P>]
-    : GetParentName<GetParentName<P>> extends keyof Themes
-    ? Themes[GetParentName<GetParentName<P>>]
-    : GetParentName<GetParentName<GetParentName<P>>> extends keyof Themes
-    ? Themes[GetParentName<GetParentName<GetParentName<P>>>]
-    : never
+      ? Themes[GetParentName<P>]
+      : GetParentName<GetParentName<P>> extends keyof Themes
+        ? Themes[GetParentName<GetParentName<P>>]
+        : GetParentName<GetParentName<GetParentName<P>>> extends keyof Themes
+          ? Themes[GetParentName<GetParentName<GetParentName<P>>>]
+          : never
   : never
 
 type GetGeneratedTheme<TD, S extends ThemeBuilderInternalState> = TD extends {
@@ -44,12 +46,12 @@ type GetGeneratedTheme<TD, S extends ThemeBuilderInternalState> = TD extends {
 }
   ? T
   : TD extends { parent: infer P }
-  ? GetGeneratedTheme<GetParentTheme<P, S['themes']>, S>
-  : TD extends { template: infer T }
-  ? T extends keyof S['templates']
-    ? GetGeneratedThemeFromTemplate<S['templates'][T], TD>
-    : TD
-  : TD
+    ? GetGeneratedTheme<GetParentTheme<P, S['themes']>, S>
+    : TD extends { template: infer T }
+      ? T extends keyof S['templates']
+        ? GetGeneratedThemeFromTemplate<S['templates'][T], TD>
+        : TD
+      : TD
 
 type ThemeBuilderBuildResult<S extends ThemeBuilderInternalState> = {
   [Key in keyof S['themes']]: GetGeneratedTheme<S['themes'][Key], S>
@@ -59,15 +61,15 @@ type GetParentName<N extends string> =
   N extends `${infer A}_${infer B}_${infer C}_${infer D}_${string}`
     ? `${A}_${B}_${C}_${D}`
     : N extends `${infer A}_${infer B}_${infer C}_${string}`
-    ? `${A}_${B}_${C}`
-    : N extends `${infer A}_${infer B}_${string}`
-    ? `${A}_${B}`
-    : N extends `${infer A}_${string}`
-    ? `${A}`
-    : never
+      ? `${A}_${B}_${C}`
+      : N extends `${infer A}_${infer B}_${string}`
+        ? `${A}_${B}`
+        : N extends `${infer A}_${string}`
+          ? `${A}`
+          : never
 
 export class ThemeBuilder<
-  State extends ThemeBuilderInternalState = ThemeBuilderInternalState
+  State extends ThemeBuilderInternalState = ThemeBuilderInternalState,
 > {
   constructor(public state: State) {}
 
@@ -145,9 +147,22 @@ export class ThemeBuilder<
     >
   }
 
+  // these wont be typed to save some complexity and because they don't need to be typed!
+  addComponentThemes<
+    CTD extends Narrow<ThemeDefinitions<ObjectStringKeys<State['masks']>>>,
+  >(
+    childThemeDefinition: CTD,
+    options?: {
+      avoidNestingWithin?: string[]
+    }
+  ) {
+    void this.addChildThemes(childThemeDefinition, options)
+    return this
+  }
+
   addChildThemes<
     CTD extends Narrow<ThemeDefinitions<ObjectStringKeys<State['masks']>>>,
-    const AvoidNestingWithin extends string[] = []
+    const AvoidNestingWithin extends string[] = [],
   >(
     childThemeDefinition: CTD,
     options?: {
@@ -246,7 +261,10 @@ export class ThemeBuilder<
         ? (() => {
             const found = definitions.find(
               // endWith match stronger than startsWith
-              (d) => parentName.endsWith(d.parent!) || parentName.startsWith(d.parent!)
+              (d) =>
+                d.parent
+                  ? parentName.endsWith(d.parent!) || parentName.startsWith(d.parent!)
+                  : true
             )
             if (!found) {
               return null
@@ -265,7 +283,13 @@ export class ThemeBuilder<
       } else if ('mask' in themeDefinition) {
         maskedThemes.push({ parentName, themeName, mask: themeDefinition })
       } else {
-        let { palette: paletteName, template: templateName, ...options } = themeDefinition
+        let {
+          palette: paletteName = '',
+          template: templateName,
+          ...options
+        } = themeDefinition
+
+        const parentDefinition = this.state.themes[parentName]
 
         if (!this.state.palettes) {
           throw new Error(
@@ -273,19 +297,27 @@ export class ThemeBuilder<
           )
         }
 
-        let palette = this.state.palettes[paletteName]
-        if (!palette) {
-          paletteName = `${parentName}_${paletteName}`
-          palette = this.state.palettes[paletteName]
-          // try using the prefix
+        let palette = this.state.palettes[paletteName || '']
+        let attemptParentName = `${parentName}_${paletteName}`
+
+        while (!palette && attemptParentName) {
+          if (attemptParentName in this.state.palettes) {
+            palette = this.state.palettes[attemptParentName]
+            paletteName = attemptParentName
+          } else {
+            attemptParentName = attemptParentName.split('_').slice(0, -1).join('_')
+          }
         }
 
         if (!palette) {
-          throw new Error(
-            `No palette for theme ${themeName}: ${paletteName} (${Object.keys(
-              this.state.palettes
-            ).join(', ')})`
-          )
+          const msg =
+            process.env.NODE_ENV !== 'production'
+              ? `: ${themeName}: ${paletteName}
+          Definition: ${JSON.stringify(themeDefinition)}
+          Parent: ${JSON.stringify(parentDefinition)}
+          Potential: (${Object.keys(this.state.palettes).join(', ')})`
+              : ``
+          throw new Error(`No palette for theme${msg}`)
         }
 
         const template = this.state.templates?.[templateName]

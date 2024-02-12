@@ -1,14 +1,16 @@
+import { writeFileSync } from 'fs'
 import { basename, dirname, extname, join, relative, resolve } from 'path'
 
 import { Color, colorLog } from '@tamagui/cli-color'
 import { getDefaultTamaguiConfig } from '@tamagui/config-default'
-import { CLIResolvedOptions, CLIUserOptions, TamaguiOptions } from '@tamagui/types'
+import type { CLIResolvedOptions, CLIUserOptions, TamaguiOptions } from '@tamagui/types'
 import type { TamaguiInternalConfig } from '@tamagui/web'
 import esbuild from 'esbuild'
 import { existsSync, pathExists, readJSON, writeFile } from 'fs-extra'
 
 import { SHOULD_DEBUG } from '../constants'
 import { requireTamaguiCore } from '../helpers/requireTamaguiCore'
+import { minifyCSS } from '../minifyCSS'
 import { getNameToPaths, registerRequire } from '../registerRequire'
 import {
   TamaguiProjectInfo,
@@ -58,9 +60,11 @@ export async function loadTamagui(
     // init config
     const config = createTamagui(bundleInfo.tamaguiConfig) as any
 
-    if (props.outputCSS) {
+    if (props.outputCSS && props.platform === 'web') {
       colorLog(Color.FgYellow, `    ➡ [tamagui] output css: ${props.outputCSS}\n`)
-      const css = config.getCSS()
+      // default to not minifying it messes up ssr parsing
+      const cssOut = config.getCSS()
+      const css = props.disableMinifyCSS === false ? minifyCSS(cssOut).code : cssOut
       await writeFile(props.outputCSS, css)
     }
   }
@@ -102,6 +106,37 @@ const generateThemesAndLog = async (options: TamaguiOptions, force = false) => {
 
 const last: Record<string, TamaguiProjectInfo | null> = {}
 const lastVersion: Record<string, string> = {}
+
+export function loadTamaguiBuildConfigSync(
+  tamaguiOptions: Partial<TamaguiOptions> | undefined
+) {
+  const buildFilePath = tamaguiOptions?.buildFile ?? 'tamagui.build.ts'
+  if (existsSync(buildFilePath)) {
+    const registered = registerRequire('web')
+    try {
+      const out = require(buildFilePath).default
+      if (!out) {
+        throw new Error(`No default export found in ${buildFilePath}: ${out}`)
+      }
+      tamaguiOptions = {
+        ...tamaguiOptions,
+        ...out,
+      }
+    } finally {
+      registered.unregister()
+    }
+  }
+  if (!tamaguiOptions) {
+    throw new Error(
+      `No tamagui build options found either via input props or at tamagui.build.ts`
+    )
+  }
+  return {
+    config: 'tamagui.config.ts',
+    components: ['@tamagui/core'],
+    ...tamaguiOptions,
+  } as TamaguiOptions
+}
 
 // loads in-process using esbuild-register
 export function loadTamaguiSync({
@@ -179,7 +214,16 @@ export function loadTamaguiSync({
         nameToPaths: getNameToPaths(),
       } satisfies TamaguiProjectInfo
 
-      if (propsIn.config) {
+      if (tamaguiConfig) {
+        if (props.outputCSS) {
+          colorLog(Color.FgYellow, `    ➡ [tamagui] output css: ${props.outputCSS}\n`)
+          const css =
+            props.disableMinifyCSS === false
+              ? minifyCSS(tamaguiConfig.getCSS()).code
+              : tamaguiConfig.getCSS()
+          writeFileSync(props.outputCSS, css)
+        }
+
         generateTamaguiStudioConfigSync(props, info)
       }
 

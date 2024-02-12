@@ -1,3 +1,106 @@
+- ./LinearGradient.shared isnt being fully specified tripping up webpack:
+
+```
+Module not found: Error: Can't resolve './LinearGradient.shared' in '/Users/n8/universe/node_modules/@tamagui/linear-gradient/dist/esm'
+Did you mean 'LinearGradient.shared.mjs'?
+BREAKING CHANGE: The request './LinearGradient.shared' failed to resolve only because it was resolved as fully specified
+(probably because the origin is strict EcmaScript Module, e. g. a module with javascript mimetype, a '*.mjs' file, or a '*.js' file where the package.json contains '"type": "module"').
+```
+
+- experimetnalFlattenThemes 
+  - <Flex centered gap={amountAndEquivalentValueGap}>
+  - is leaving _expressions in the render incorrectly
+
+- settings page in takeout SSR hydration issue due to useThemeSetting
+
+- animatedStyle showing up in animated component snapshot on native
+  - add some native snapshots in ci tests
+
+- expo router ExpoResponse not a constructor issue
+
+- addTheme updateTheme regression needs a test
+
+- not seeing data-at props
+
+- add more web-only stlye props:
+  - filter, backdropFilter, mixBlendMode are really good for $theme-light/dark
+- Group is not SSR safe because useProps is evaluating to specific media queries
+on the server and then ultimately becomes not-media-css
+
+- type to search on Select regressed
+
+- masks wasn't exported in my version of @tamagui/theme-builder (1.88.18). I had to grab it from @tamagui/themes/v2-themes instead
+
+- // TODO: pulling past the limit breaks scroll on native, need to better make ScrollView
+
+- icons move from themed() to just styled()
+
+- nextjs plugin should automatically do the t_unmounted thing if disableSSR isnt true
+
+- // TODO ?
+- make studio not build unless `studio(` in commit
+
+- native theme change warning logs + theme change speed
+
+- document popover hoverable + onOpenChange second arg via
+
+- add $mouse to takeout
+
+- bug in generated icon props
+  - https://discord.com/channels/909986013848412191/1178185816426680370/1199854688233857136
+
+- compiler - no need to setup any separate package
+
+- 2.0 rename SizableStack to Surface and simplify a bit
+
+- Remove the need for Text
+
+- document the t_unmounted / SSR
+- $theme-light in prod mode SSR issue
+- popovers work with no js
+
+- remove proxy worm swap behavior except for whitelisted ones
+- TODO
+  - process.env.TAMAGUI_TARGET === 'native' ? false : props['data-disable-theme']
+  - this looks wrong? shouldnt it be the same as on native? we may be doubling them on accident
+- Select `ListItemFrame` area is messy/slow due to inline styles and complex components
+- propMode
+
+- make styled() only not accept most non-style props
+
+- causes leftover props in DOM:
+
+<Stack
+  hitSlop={5}
+  onAccessibilityAction={[]}
+  importantForAccessibility="no"
+  needsOffscreenAlphaCompositing
+/>
+
+- useStyle and others can have forComponent types
+
+- docs:
+  - for ssr need for t_unmounted
+  - explain how ssr works
+
+- tests:
+  - SSR e2e with animations
+  - onLayout + RN or not
+  - active/focus/press styles (+ animations) (+ media queries)
+    - we have some of these but more better
+
+- TODO this is duplicated
+
+- this could work automatically? or with a simple config:
+const ScrollViewTamagui = styled(ScrollView, {
+  bg: '$background',
+  contentContainerStyle: {
+    flex: 1,
+    padding: "$md',
+  }
+})
+
+
 studio: add outlineColor and the pseudos
 studio: export for takeout option
 
@@ -339,7 +442,6 @@ Ali:
 
 - createThemes accepts array not object
 - site _app has t_unmounted helper, move that into tamagui proper
-- SimpleTooltip no sub theme looks bad on dark mode
 
 ---
 
@@ -511,3 +613,13 @@ Themes can completely transform the look and feel, a button could have multiple 
     - defaults to theme: 'active'
 
 - <Image borderWidth="$2" /> not turning into val via psgeorge
+
+- `import { _ } from '@tamagui/core'`
+  - `<_.view />` `<_.text />`
+  - put it on globalThis and override type for super quick authoring
+  - can extend with your own
+    - `<_.p />` `<_.a />` `<.img />` etc
+  - can proxy to itself allowing for naming?
+    - `<_.view.my-thing />`
+  - or boolean variants?
+    - `<_.view.p-5.m-10 />`

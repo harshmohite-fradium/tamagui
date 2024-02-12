@@ -41,3 +41,40 @@ export function Test(isLoading) {
   return <__ReactNativeView style={[_sheet[\\"0\\"], media.sm ? _sheet[\\"1\\"] : _sheet[\\"2\\"], media.sm && isLoading ? _sheet[\\"3\\"] : _sheet[\\"4\\"], media.sm && !isLoading ? _sheet[\\"5\\"] : _sheet[\\"6\\"]]} />;
 }"
 `;
+
+exports[`flatten-tests > work with experimentalFlattenThemesOnNative + ternary 1`] = `
+"const __internalWithTheme = require('@tamagui/core').internalWithTheme;
+const __ReactNativeView = require('react-native').View;
+const __ReactNativeText = require('react-native').Text;
+// debug
+import { View } from 'tamagui';
+export function Test() {
+  return <_ReactNativeViewWrapper expressions={[showBackground]} />;
+}
+const _ReactNativeViewWrapper = __internalWithTheme(__ReactNativeView, (theme, _expressions) => {
+  return React.useMemo(() => {
+    return Object.assign({}, _expressions[0] ? {
+      \\"backgroundColor\\": theme.color1
+    } : {
+      \\"backgroundColor\\": theme.color2
+    });
+  }, [theme.color1, theme.color2, ..._expressions]);
+});"
+`;
+
+exports[`flatten-tests > work with experimentalFlattenThemesOnNative 1`] = `
+"const __internalWithTheme = require('@tamagui/core').internalWithTheme;
+const __ReactNativeView = require('react-native').View;
+const __ReactNativeText = require('react-native').Text;
+import { YStack } from 'tamagui/src/YStack';
+export function Test(isLoading) {
+  return <_ReactNativeViewWrapper />;
+}
+const _ReactNativeViewWrapper = __internalWithTheme(__ReactNativeView, (theme, _expressions) => {
+  return React.useMemo(() => {
+    return Object.assign({}, {
+      \\"backgroundColor\\": theme.background
+    });
+  }, [theme.background, ..._expressions]);
+});"
+`;

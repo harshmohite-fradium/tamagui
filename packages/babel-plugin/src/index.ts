@@ -3,7 +3,7 @@ import { basename } from 'path'
 import generator from '@babel/generator'
 import { declare } from '@babel/helper-plugin-utils'
 import template from '@babel/template'
-import { Visitor } from '@babel/traverse'
+import type { Visitor } from '@babel/traverse'
 import * as t from '@babel/types'
 import type { TamaguiOptions } from '@tamagui/static'
 import {
@@ -26,7 +26,7 @@ const importWithTheme = template(`
 const __internalWithTheme = require('@tamagui/core').internalWithTheme;
 `)
 
-const extractor = createExtractor()
+const extractor = createExtractor({ platform: 'native' })
 
 export default declare(function snackBabelPlugin(
   api,
@@ -45,6 +45,14 @@ export default declare(function snackBabelPlugin(
         enter(this: any, root) {
           let sourcePath = this.file.opts.filename
 
+          if (sourcePath?.includes('node_modules')) {
+            return
+          }
+          // by default only pick up .jsx / .tsx
+          if (!sourcePath?.endsWith('.jsx') && !sourcePath?.endsWith('.tsx')) {
+            return
+          }
+
           // this filename comes back incorrect in react-native, it adds /ios/ for some reason
           // adding a fix here, but it's a bit tentative...
           if (process.env.SOURCE_ROOT?.endsWith('ios')) {
@@ -56,7 +64,11 @@ export default declare(function snackBabelPlugin(
           const sheetStyles = {}
           const sheetIdentifier = root.scope.generateUidIdentifier('sheet')
           const firstComment =
-            root.node.body[0]?.leadingComments?.[0]?.value?.trim() ?? ''
+            // join because you can join together multiple pragmas
+            root.node.body[0]?.leadingComments
+              ?.map((comment) => comment?.value || ' ')
+              .join(' ') ?? ''
+
           const { shouldPrintDebug, shouldDisable } = getPragmaOptions({
             disableCommentCheck: true,
             source: firstComment,
@@ -158,13 +170,10 @@ export default declare(function snackBabelPlugin(
 
                     // make a sub-array
                     return addThemedStyleExpression(themed)
-                  } else {
-                    const ident = addSheetStyle(plain, props.node)
-                    // since we only do flattened disabling this path
-                    return ident
-                    // when we supported extracting non-flattened
-                    // addStyleExpression(ident, isFlattened ? simpleHash(JSON.stringify(plain)) : undefined)
                   }
+                  const ident = addSheetStyle(plain, props.node)
+                  // since we only do flattened disabling this path
+                  return ident
                 }
 
                 function addStyleExpression(expr: any) {
@@ -195,19 +204,22 @@ export default declare(function snackBabelPlugin(
                       addStyleExpression(getStyleExpression(attr.value))
                       break
                     }
+
                     case 'ternary': {
                       const { consequent, alternate } = attr.value
-
-                      if (options.experimentalFlattenThemesOnNative) {
-                        expressions.push(attr.value.test)
-                      }
 
                       const consExpr = getStyleExpression(consequent)
                       const altExpr = getStyleExpression(alternate)
 
+                      const willFlattenTheme =
+                        options.experimentalFlattenThemesOnNative && themeKeysUsed.size
+                      if (willFlattenTheme) {
+                        expressions.push(attr.value.test)
+                      }
+
                       const styleExpr = t.conditionalExpression(
-                        options.experimentalFlattenThemesOnNative
-                          ? t.identifier(`expressions[${expressions.length - 1}]`)
+                        willFlattenTheme
+                          ? t.identifier(`_expressions[${expressions.length - 1}]`)
                           : attr.value.test,
                         consExpr || t.nullLiteral(),
                         altExpr || t.nullLiteral()
@@ -219,18 +231,20 @@ export default declare(function snackBabelPlugin(
                       )
                       break
                     }
+
                     case 'dynamic-style': {
                       expressions.push(attr.value as t.Expression)
                       addStyleExpression(
                         t.objectExpression([
                           t.objectProperty(
                             t.identifier(attr.name as string),
-                            t.identifier(`expressions[${expressions.length - 1}]`)
+                            t.identifier(`_expressions[${expressions.length - 1}]`)
                           ),
                         ])
                       )
                       break
                     }
+
                     case 'attr': {
                       if (t.isJSXSpreadAttribute(attr.value)) {
                         if (isSimpleSpread(attr.value)) {
@@ -248,7 +262,7 @@ export default declare(function snackBabelPlugin(
                 props.node.attributes = finalAttrs
 
                 if (props.isFlattened) {
-                  if (themeKeysUsed.size || expressions.length) {
+                  if (themeKeysUsed.size) {
                     if (!hasImportedViewWrapper) {
                       root.unshiftContainer('body', importWithTheme())
                       hasImportedViewWrapper = true
@@ -267,7 +281,7 @@ export default declare(function snackBabelPlugin(
                           t.callExpression(t.identifier('__internalWithTheme'), [
                             t.identifier(name),
                             t.arrowFunctionExpression(
-                              [t.identifier('theme'), t.identifier('expressions')],
+                              [t.identifier('theme'), t.identifier('_expressions')],
                               t.blockStatement([
                                 t.returnStatement(
                                   t.callExpression(
@@ -285,7 +299,11 @@ export default declare(function snackBabelPlugin(
                                                 t.identifier('Object'),
                                                 t.identifier('assign')
                                               ),
-                                              [...stylesExpr.elements, ...[]] as any[]
+                                              [
+                                                t.objectExpression([]),
+                                                ...stylesExpr.elements,
+                                                ...[],
+                                              ] as any[]
                                             )
                                           ),
                                         ])
@@ -297,7 +315,7 @@ export default declare(function snackBabelPlugin(
                                             t.identifier(k)
                                           )
                                         ),
-                                        t.spreadElement(t.identifier('expressions')),
+                                        t.spreadElement(t.identifier('_expressions')),
                                       ]),
                                     ]
                                   )

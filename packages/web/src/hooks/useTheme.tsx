@@ -2,13 +2,11 @@ import { isClient, isIos, isServer } from '@tamagui/constants'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getConfig } from '../config'
-import { Variable, getVariable } from '../createVariable'
+import type { Variable } from '../createVariable'
+import { getVariable } from '../createVariable'
 import { isEqualShallow } from '../helpers/createShallowSetState'
-import {
-  ThemeManager,
-  ThemeManagerState,
-  getHasThemeUpdatingProps,
-} from '../helpers/ThemeManager'
+import type { ThemeManagerState } from '../helpers/ThemeManager'
+import { ThemeManager, getHasThemeUpdatingProps } from '../helpers/ThemeManager'
 import { ThemeManagerIDContext } from '../helpers/ThemeManagerContext'
 import type {
   DebugProp,
@@ -57,12 +55,12 @@ export type ThemeGettable<Val> = Val & {
   ) =>
     | string
     | (Val extends Variable<infer X>
-      ? X extends VariableValGeneric
-      ? any
-      : Exclude<X, Variable>
-      : Val extends VariableVal
-      ? string | number
-      : unknown)
+        ? X extends VariableValGeneric
+          ? any
+          : Exclude<X, Variable>
+        : Val extends VariableVal
+          ? string | number
+          : unknown)
 }
 
 export type UseThemeResult = {
@@ -86,21 +84,27 @@ export const useThemeWithState = (
     keys.current,
     !isServer
       ? () => {
-        const next =
-          props.shouldUpdate?.() ?? (keys.current.length > 0 ? true : undefined)
+          const next =
+            props.shouldUpdate?.() ?? (keys.current.length > 0 ? true : undefined)
 
-        if (
-          process.env.NODE_ENV === 'development' &&
-          props.debug &&
-          props.debug !== 'profile'
-        ) {
-          console.info(`  🎨 useTheme() shouldUpdate?`, next, {
-            shouldUpdateProp: props.shouldUpdate?.(),
-            keys: [...keys.current],
-          })
+          if (
+            process.env.NODE_ENV === 'development' &&
+            typeof props.debug === 'string' &&
+            props.debug !== 'profile'
+          ) {
+            console.info(
+              `  🎨 useTheme() shouldUpdate?`,
+              next,
+              isClient
+                ? {
+                    shouldUpdateProp: props.shouldUpdate?.(),
+                    keys: [...keys.current],
+                  }
+                : ''
+            )
+          }
+          return next
         }
-        return next
-      }
       : undefined
   )
 
@@ -263,6 +267,7 @@ function someParentIsInversed(manager?: ThemeManager) {
 
 export const activeThemeManagers = new Set<ThemeManager>()
 
+// until WeakRef support:
 const _uidToManager = new WeakMap<Object, ThemeManager>()
 const _idToUID: Record<number, Object> = {}
 const getId = (id: number) => _idToUID[id]
@@ -273,7 +278,7 @@ export const getThemeManager = (id: number) => {
 
 const registerThemeManager = (t: ThemeManager) => {
   if (!_idToUID[t.id]) {
-    const id = _idToUID[t.id] = {}
+    const id = (_idToUID[t.id] = {})
     _uidToManager.set(id, t)
   }
 }
@@ -377,7 +382,14 @@ export const useChangeThemeEffect = (
 
           if (process.env.NODE_ENV === 'development' && props.debug === 'verbose') {
             // prettier-ignore
-            console.info(` 🔸 onChange`, themeManager.id, { force, shouldTryUpdate, props, name, manager, keys, })
+            console.info(` 🔸 onChange`, themeManager.id, {
+              force,
+              shouldTryUpdate,
+              props,
+              name,
+              manager,
+              keys,
+            })
           }
 
           if (shouldTryUpdate) {

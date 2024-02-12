@@ -3,7 +3,8 @@ import React, { Children, cloneElement, forwardRef, isValidElement, useRef } fro
 
 import { variableToString } from '../createVariable'
 import { ThemeManagerIDContext } from '../helpers/ThemeManagerContext'
-import { ChangedThemeResponse, useChangeThemeEffect } from '../hooks/useTheme'
+import type { ChangedThemeResponse } from '../hooks/useTheme'
+import { useChangeThemeEffect } from '../hooks/useTheme'
 import type { ThemeProps } from '../types'
 import { ThemeDebug } from './ThemeDebug'
 
@@ -19,8 +20,8 @@ export const Theme = forwardRef(function Theme({ children, ...props }: ThemeProp
 
   let finalChildren = disableDirectChildTheme
     ? Children.map(children, (child) =>
-      cloneElement(child, { ['data-disable-theme']: true })
-    )
+        cloneElement(child, { ['data-disable-theme']: true })
+      )
     : children
 
   if (ref) {
@@ -57,10 +58,16 @@ export function getThemedChildren(
 
   // its always there.. should fix type
   if (!themeManager) {
-    throw new Error(process.env.NODE_ENV === 'development' ? `❌ No theme found, either incorrect name, potential duplicate tamagui deps, or TamaguiProvider not providing themes.` : `❌`)
+    throw new Error(
+      process.env.NODE_ENV === 'development'
+        ? `❌ No theme found, either incorrect name, potential duplicate tamagui deps, or TamaguiProvider not providing themes.`
+        : `❌ 005`
+    )
   }
 
   const { shallow, forceClassName } = props
+
+  // TODO remove hook and join with the parent stateRef in createComponent
   const hasEverThemed = useRef(false)
 
   const shouldRenderChildrenWithTheme =
@@ -80,12 +87,12 @@ export function getThemedChildren(
     next = Children.toArray(children).map((child) => {
       return isValidElement(child)
         ? cloneElement(
-          child,
-          undefined,
-          <Theme name={themeManager.state.parentName}>
-            {(child as any).props.children}
-          </Theme>
-        )
+            child,
+            undefined,
+            <Theme name={themeManager.state.parentName}>
+              {(child as any).props.children}
+            </Theme>
+          )
         : child
     })
   }
@@ -171,8 +178,8 @@ function getThemeClassNameAndStyle(themeState: ChangedThemeResponse, isRoot = fa
 
   const style = themeColor
     ? {
-      color: themeColor,
-    }
+        color: themeColor,
+      }
     : undefined
 
   let className = themeState.state?.className || ''

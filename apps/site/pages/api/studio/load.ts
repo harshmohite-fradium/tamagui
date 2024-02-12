@@ -1,15 +1,19 @@
-import { checkSponsorAccess } from '@lib/getSponsorData'
+import { apiRoute } from '@lib/apiRoute'
+import { authorizeUserAccess } from '@lib/authorizeUserAccess'
 import { protectApiRoute } from '@lib/protectApiRoute'
-import { NextApiHandler } from 'next'
 
-const handler: NextApiHandler = async (req, res) => {
+const handler = apiRoute(async (req, res) => {
   const { supabase, user } = await protectApiRoute({ req, res })
-  const { teamId } = await checkSponsorAccess({
-    req,
-    res,
-    supabase,
-    throwIfNoAccess: true,
-  })
+  const { teamId } = await authorizeUserAccess(
+    {
+      req,
+      res,
+      supabase,
+    },
+    {
+      checkForStudioAccess: true,
+    }
+  )
 
   const results = await supabase
     .from('studio_themes')
@@ -41,6 +45,6 @@ const handler: NextApiHandler = async (req, res) => {
   console.info(`Sending themeSuites for ids: ${results.data.map((x) => x.id).join(', ')}`)
 
   res.json(response)
-}
+})
 
 export default handler

@@ -46,7 +46,7 @@ npm install tamagui @tamagui/config
 Next, create a Tamagui config file named `tamagui.config.ts`:
 
 ```ts
-import { config } from '@tamagui/config/v2'
+import { config } from '@tamagui/config/v3'
 
 import { createTamagui } from 'tamagui'
 const tamaguiConfig = createTamagui(config)
@@ -64,7 +64,7 @@ export default tamaguiConfig
 // be sure the import and declare module lines both use that same name
 ```
 
-**Note:** The `v2` config imports the css driver on web and react-native on native. For react-native, import the `@tamagui/config/v2-native` config, and for reanimated, import the `@tamagui/config/v2-reanimated` config.
+**Note:** The `v3` config imports the `@tamagui/animations-css` driver on web and `@tamagui/animations-react-native` on native. You can change these as you please, we provide exports for `animationsCSS`, `animationsReanimated`, and `animationsNative` to make that easier.
 
 ### Usage
 
@@ -104,4 +104,5 @@ function Example() {
 ## Contributing
 
 To contribute to Tamagui reference the [contributing guide](https://github.com/tamagui/tamagui/blob/master/CONTRIBUTING.md).
-To contribute to documentation reference the [writing guide](https://github.com/tamagui/tamagui/apps/site/WRITING-GUIDE.md).
+
+To contribute to documentation reference the [writing guide](https://github.com/tamagui/tamagui/blob/master/apps/site/WRITING-GUIDE.md).

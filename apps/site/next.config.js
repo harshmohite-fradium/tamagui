@@ -6,51 +6,13 @@ process.env.IGNORE_TS_CONFIG_PATHS = 'true'
 /** @type {import('next').NextConfig} */
 const { withTamagui } = require('@tamagui/next-plugin')
 const withBundleAnalyzer = require('@next/bundle-analyzer')
-const { join } = require('path')
-
-const boolVals = {
-  true: true,
-  false: false,
-}
-
-const disableExtraction =
-  boolVals[process.env.DISABLE_EXTRACTION] ?? process.env.NODE_ENV === 'development'
 
 const plugins = [
   withBundleAnalyzer({
     enabled: process.env.NODE_ENV === 'production',
     openAnalyzer: process.env.ANALYZE === 'true',
   }),
-  withTamagui({
-    emitSingleCSSFile:
-      false,
-    useReactNativeWebLite: true,
-    config: './tamagui.config.ts',
-    themeBuilder: {
-      input: '@tamagui/themes/src/themes-new.ts',
-      output: join(
-        require.resolve('@tamagui/themes/src/themes-new.ts'),
-        '..',
-        'generated-new.ts'
-      ),
-    },
-    outputCSS: process.env.NODE_ENV === 'production' ? './public/tamagui.css' : null,
-    components: ['tamagui'],
-    importsWhitelist: ['constants.js', 'colors.js'],
-    logTimings: true,
-    // enableDynamicEvaluation: true,
-    disableExtraction,
-    excludeReactNativeWebExports: [
-      'Switch',
-      'ProgressBar',
-      'Picker',
-      'CheckBox',
-      'Touchable',
-      'Animated',
-      'FlatList',
-      'Modal',
-    ],
-  }),
+  withTamagui(),
   (config) => {
     return {
       ...config,
@@ -74,10 +36,10 @@ const plugins = [
           const { StatsWriterPlugin } = require('webpack-stats-plugin')
           webpackConfig.plugins.push(
             new StatsWriterPlugin({
-              filename: 'stats.json',
-              stats: {
-                all: true,
-              },
+              // filename: 'stats.json',
+              // stats: {
+              //   all: false,
+              // },
             })
           )
         }
@@ -100,14 +62,14 @@ const plugins = [
   },
 ]
 
-module.exports = function (name, { defaultConfig }) {
+module.exports = (name, { defaultConfig }) => {
   /** @type {import('next').NextConfig} */
   let config = {
     // output: 'export',
     // runtime: 'experimental-edge',
     productionBrowserSourceMaps: process.env.ANALYZE === 'true',
     swcMinify: true,
-    reactStrictMode: true,
+    // must set to false if using reanimated
     // reactStrictMode: false,
     optimizeFonts: true,
     modularizeImports: {
@@ -155,6 +117,11 @@ module.exports = function (name, { defaultConfig }) {
     // Next.js config
     async redirects() {
       return [
+        {
+          source: '/account/subscriptions',
+          destination: '/account/items',
+          permanent: false,
+        },
         {
           source: '/docs',
           destination: '/docs/intro/introduction',

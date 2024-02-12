@@ -1,35 +1,52 @@
-import {
-  ColorTokens,
-  GetProps,
-  ThemeTokens,
-  styled,
-  useProps,
-  useTheme,
-} from '@tamagui/core'
+import type { ColorTokens, GetProps, ThemeTokens } from '@tamagui/core'
+import { normalizeColor, styled, useProps, useTheme } from '@tamagui/core'
 import { YStack } from '@tamagui/stacks'
 import type { ViewStyle } from 'react-native'
 
-import {
-  LinearGradient as ExpoLinearGradient,
-  LinearGradientProps as ExpoLinearGradientProps,
-} from './linear-gradient'
+import type { LinearGradientPoint } from './linear-gradient'
+import { LinearGradient as ExpoLinearGradient } from './linear-gradient'
 
-//
-export type LinearGradientExtraProps = Omit<ExpoLinearGradientProps, 'colors'> & {
+// taken from expo-linear-gradient
+export type LinearGradientExtraProps = {
   colors?: (ColorTokens | ThemeTokens | (string & {}))[]
+  locations?: number[] | null
+  start?: LinearGradientPoint | null
+  end?: LinearGradientPoint | null
 }
 
-export const LinearGradient = YStack.styleable<LinearGradientExtraProps>(
+const LinearGradientFrame = styled(YStack, {
+  name: 'LinearGradient',
+  overflow: 'hidden',
+  position: 'relative',
+})
+
+export const LinearGradient = LinearGradientFrame.styleable<LinearGradientExtraProps>(
   (propsIn, ref) => {
     const props = useProps(propsIn)
 
     const { start, end, colors: colorsProp, locations, children, ...stackProps } = props
     const theme = useTheme()
 
-    const colors =
+    let colors =
       props.colors?.map((c) => {
         return (theme[c]?.get('web') as string) ?? c
       }) || []
+
+    if (process.env.NODE_ENV !== 'production') {
+      if (
+        colors.some((c) => {
+          const normalized = normalizeColor(c)
+          if (!normalized || normalized.startsWith('$')) {
+            return true
+          }
+        })
+      ) {
+        console.error(
+          `LinearGradient: "colors" prop contains invalid color tokens: ${colors} fallback to default colors: ["#000", "#fff"]`
+        )
+        colors = ['#000', '#fff']
+      }
+    }
 
     return (
       <LinearGradientFrame ref={ref as any} {...stackProps}>
@@ -56,9 +73,3 @@ const gradientStyle: ViewStyle = {
   bottom: 0,
   zIndex: 0,
 }
-
-const LinearGradientFrame = styled(YStack, {
-  name: 'LinearGradient',
-  overflow: 'hidden',
-  position: 'relative',
-})
